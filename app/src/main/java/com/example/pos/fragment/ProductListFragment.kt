@@ -17,14 +17,17 @@ import com.example.pos.data.local.AppDatabase
 import com.example.pos.data.repository.CategoryRepositoryImpl
 import com.example.pos.data.repository.ProductRepositoryImpl
 import com.example.pos.viewmodel.ProductViewModel
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ProductListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ProductAdapter
+    private lateinit var sortButton: FloatingActionButton
     private var category: String? = null
     private var searchQuery: String = ""
+    private var isAscending: Boolean = true
 
     private val viewModel: ProductViewModel by viewModels {
         val database = AppDatabase.getDatabase(requireContext())
@@ -53,7 +56,22 @@ class ProductListFragment : Fragment() {
         recyclerView = view.findViewById(R.id.rvProducts)
         recyclerView.layoutManager = LinearLayoutManager(context)
         
+        sortButton = view.findViewById(R.id.fabSort)
+        sortButton.setOnClickListener {
+            isAscending = !isAscending
+            updateSortButtonIcon()
+            viewModel.products.value?.let { updateProductList(it) }
+        }
+        updateSortButtonIcon()
+        
         observeProducts()
+    }
+
+    private fun updateSortButtonIcon() {
+        sortButton.setImageResource(
+            if (isAscending) R.drawable.ic_sort_ascending
+            else R.drawable.ic_sort_descending
+        )
     }
 
     private fun observeProducts() {
@@ -76,7 +94,14 @@ class ProductListFragment : Fragment() {
             val matchesCategory = category == "ALL" || product.category == category
             val matchesSearch = searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true)
             matchesCategory && matchesSearch
-        }
+        }.sortedWith(
+            if (isAscending) {
+                compareBy { it.name }
+            } else {
+                compareByDescending { it.name }
+            }
+        )
+
         adapter = ProductAdapter(
             products = filteredProducts,
             onEditClick = { product ->
