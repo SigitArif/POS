@@ -20,7 +20,7 @@ class CategoryPagerAdapter(
     private val lifecycleOwner: LifecycleOwner
 ) : FragmentStateAdapter(activity) {
     
-    private val _categories = MutableStateFlow<List<CategoryEntity>>(listOf(CategoryEntity("ALL")))
+    private val _categories = MutableStateFlow<List<CategoryEntity>>(emptyList())
     val categories: StateFlow<List<CategoryEntity>> = _categories
 
     private val viewModel: CategoryViewModel by lazy {
@@ -37,7 +37,7 @@ class CategoryPagerAdapter(
         lifecycleOwner.lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 viewModel.categories.collect { categories ->
-                    _categories.value = listOf(CategoryEntity("ALL")) + categories
+                    _categories.value = categories
                     notifyDataSetChanged()
                 }
             }

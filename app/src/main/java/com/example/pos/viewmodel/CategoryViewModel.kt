@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 class CategoryViewModel(private val repository: CategoryRepository) : ViewModel() {
     
-    private val _categories = MutableStateFlow<List<CategoryEntity>>(emptyList())
+    private val _categories = MutableStateFlow<List<CategoryEntity>>(listOf(CategoryEntity("ALL")))
     val categories: StateFlow<List<CategoryEntity>> = _categories
 
     private val _error = MutableStateFlow<String?>(null)
@@ -29,7 +29,7 @@ class CategoryViewModel(private val repository: CategoryRepository) : ViewModel(
                     _error.value = e.message
                 }
                 .collect { categories ->
-                    _categories.value = categories
+                    _categories.value = listOf(CategoryEntity("ALL")) + categories
                 }
         }
     }
@@ -43,6 +43,22 @@ class CategoryViewModel(private val repository: CategoryRepository) : ViewModel(
         viewModelScope.launch {
             try {
                 repository.addCategory(category)
+                _error.value = null
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
+
+    fun deleteCategory(category: String) {
+        if (category.isBlank()) {
+            _error.value = "Category name cannot be empty"
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                repository.deleteCategory(category)
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.message

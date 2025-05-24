@@ -1,6 +1,7 @@
 package com.example.pos
 
 import android.os.Bundle
+import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
@@ -8,6 +9,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.pos.adapter.CategoryPagerAdapter
 import com.example.pos.fragment.AddProductFragment
 import com.example.pos.fragment.ProductListFragment
+import com.example.pos.fragment.SettingsDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -28,6 +30,7 @@ class MainActivity : AppCompatActivity() {
         setupTabLayout()
         setupSearchView()
         setupFab()
+        setupSettingsButton()
     }
 
     private fun setupViewPager() {
@@ -87,5 +90,11 @@ class MainActivity : AppCompatActivity() {
     private fun getCurrentFragment(): Fragment? {
         val position = viewPager.currentItem
         return supportFragmentManager.findFragmentByTag("f$position")
+    }
+
+    private fun setupSettingsButton() {
+        findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
+            SettingsDialog.newInstance().show(supportFragmentManager, "SettingsDialog")
+        }
     }
 } 

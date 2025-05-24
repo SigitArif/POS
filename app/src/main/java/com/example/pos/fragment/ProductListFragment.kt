@@ -91,7 +91,7 @@ class ProductListFragment : Fragment() {
 
     private fun updateProductList(products: List<com.example.pos.model.Product>) {
         val filteredProducts = products.filter { product ->
-            val matchesCategory = category == "ALL" || product.category == category
+            val matchesCategory = category == "ALL" || product.category.equals(category, ignoreCase = true)
             val matchesSearch = searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true)
             matchesCategory && matchesSearch
         }.sortedWith(

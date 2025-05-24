@@ -57,8 +57,9 @@ class ProductViewModel(
                 // First, ensure the category exists
                 categoryRepository.addCategory(category)
                 
-                // Then add the product
-                val product = Product(name = name, price = price, category = category)
+                // Then add the product with normalized category
+                val normalizedCategory = category.trim().lowercase()
+                val product = Product(name = name, price = price, category = normalizedCategory)
                 productRepository.insertProduct(product)
                 _error.value = null
             } catch (e: Exception) {
@@ -86,8 +87,10 @@ class ProductViewModel(
                 // First, ensure the category exists
                 categoryRepository.addCategory(product.category)
                 
-                // Then update the product
-                productRepository.updateProduct(product)
+                // Then update the product with normalized category
+                val normalizedCategory = product.category.trim().lowercase()
+                val updatedProduct = product.copy(category = normalizedCategory)
+                productRepository.updateProduct(updatedProduct)
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.message

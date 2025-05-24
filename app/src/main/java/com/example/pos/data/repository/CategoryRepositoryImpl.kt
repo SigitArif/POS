@@ -21,7 +21,7 @@ class CategoryRepositoryImpl(
     }
 
     override suspend fun deleteCategory(category: String) {
-        categoryDao.deleteCategory(CategoryEntity(category))
+        categoryDao.deleteCategoryByName(category)
     }
 
     override suspend fun deleteAllCategories() {
