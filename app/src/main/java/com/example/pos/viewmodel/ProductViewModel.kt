@@ -38,13 +38,17 @@ class ProductViewModel(
         }
     }
 
-    fun addProduct(name: String, price: Double, category: String) {
+    fun addProduct(name: String, price: Double, basePrice: Double = price, productCode: String? = null, category: String) {
         if (name.isBlank()) {
             _error.value = "Product name cannot be empty"
             return
         }
         if (price <= 0) {
             _error.value = "Price must be greater than 0"
+            return
+        }
+        if (basePrice <= 0) {
+            _error.value = "Base price must be greater than 0"
             return
         }
         if (category.isBlank()) {
@@ -59,7 +63,13 @@ class ProductViewModel(
                 
                 // Then add the product with normalized category
                 val normalizedCategory = category.trim().lowercase()
-                val product = Product(name = name, price = price, category = normalizedCategory)
+                val product = Product(
+                    name = name,
+                    price = price,
+                    basePrice = basePrice,
+                    productCode = productCode,
+                    category = normalizedCategory
+                )
                 productRepository.insertProduct(product)
                 _error.value = null
             } catch (e: Exception) {
@@ -75,6 +85,10 @@ class ProductViewModel(
         }
         if (product.price <= 0) {
             _error.value = "Price must be greater than 0"
+            return
+        }
+        if (product.basePrice <= 0) {
+            _error.value = "Base price must be greater than 0"
             return
         }
         if (product.category.isBlank()) {

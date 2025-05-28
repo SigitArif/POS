@@ -61,7 +61,14 @@ class AddProductFragment : DialogFragment() {
         binding.addButton.setOnClickListener {
             val name = binding.nameEditText.text.toString()
             val priceStr = binding.priceEditText.text.toString()
+            val basePriceStr = binding.basePriceEditText.text.toString()
+            val productCode = binding.productCodeEditText.text.toString().takeIf { it.isNotBlank() }
             val category = binding.categoryEditText.text.toString()
+
+            if (name.isBlank()) {
+                Toast.makeText(context, "Please enter a product name", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
             if (category.isBlank()) {
                 Toast.makeText(context, "Please enter a category", Toast.LENGTH_SHORT).show()
@@ -71,13 +78,15 @@ class AddProductFragment : DialogFragment() {
             try {
                 val price = priceStr.toDoubleOrNull()
                 if (price == null) {
-                    Toast.makeText(context, "Please enter a valid price", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Please enter a valid selling price", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                productViewModel.addProduct(name, price, category)
-                dismiss() // Close the dialog after successful addition
+
+                val basePrice = basePriceStr.toDoubleOrNull() ?: price
+                productViewModel.addProduct(name, price, basePrice, productCode, category)
+                dismiss()
             } catch (e: NumberFormatException) {
-                Toast.makeText(context, "Please enter a valid price", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Please enter valid prices", Toast.LENGTH_SHORT).show()
             }
         }
     }

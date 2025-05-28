@@ -10,12 +10,16 @@ data class ProductEntity(
     val id: Long = 0,
     val name: String,
     val price: Double,
+    val basePrice: Double = price,
+    val productCode: String? = null,
     val category: String
 ) {
     fun toProduct() = Product(
         id = id,
         name = name,
         price = price,
+        basePrice = basePrice,
+        productCode = productCode,
         category = category
     )
 
@@ -24,6 +28,8 @@ data class ProductEntity(
             id = product.id,
             name = product.name,
             price = product.price,
+            basePrice = product.basePrice,
+            productCode = product.productCode,
             category = product.category
         )
     }

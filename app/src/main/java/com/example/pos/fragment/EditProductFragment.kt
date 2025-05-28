@@ -69,6 +69,8 @@ class EditProductFragment : DialogFragment() {
         binding.addButton.setOnClickListener {
             val name = binding.nameEditText.text.toString()
             val priceStr = binding.priceEditText.text.toString()
+            val basePriceStr = binding.basePriceEditText.text.toString()
+            val productCode = binding.productCodeEditText.text.toString().takeIf { it.isNotBlank() }
             val category = binding.categoryEditText.text.toString()
 
             if (name.isBlank()) {
@@ -84,13 +86,23 @@ class EditProductFragment : DialogFragment() {
             try {
                 val price = priceStr.toDoubleOrNull()
                 if (price == null) {
-                    Toast.makeText(context, "Please enter a valid price", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Please enter a valid selling price", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                productViewModel.updateProduct(product.copy(name = name, price = price, category = category))
+
+                val basePrice = basePriceStr.toDoubleOrNull() ?: price
+                productViewModel.updateProduct(
+                    product.copy(
+                        name = name,
+                        price = price,
+                        basePrice = basePrice,
+                        productCode = productCode,
+                        category = category
+                    )
+                )
                 dismiss()
             } catch (e: NumberFormatException) {
-                Toast.makeText(context, "Please enter a valid price", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Please enter valid prices", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -111,6 +123,8 @@ class EditProductFragment : DialogFragment() {
     private fun populateFields() {
         binding.nameEditText.setText(product.name)
         binding.priceEditText.setText(product.price.toString())
+        binding.basePriceEditText.setText(product.basePrice.toString())
+        binding.productCodeEditText.setText(product.productCode)
         binding.categoryEditText.setText(product.category)
     }
 
