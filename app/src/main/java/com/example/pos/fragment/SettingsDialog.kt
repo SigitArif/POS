@@ -23,6 +23,7 @@ import com.example.pos.viewmodel.CategoryViewModel
 import com.example.pos.viewmodel.ProductViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
@@ -128,12 +129,36 @@ class SettingsDialog : DialogFragment() {
 
     private fun importDatabase(uri: Uri) {
         try {
+            // First, close the current database connection
+            AppDatabase.getDatabase(requireContext()).close()
+            
+            // Create a temporary file for the imported database
+            val tempDbFile = File(requireContext().filesDir, "temp_import.db")
+            
+            // Copy the imported database to the temporary file
             requireContext().contentResolver.openInputStream(uri)?.use { inputStream ->
-                val dbFile = requireContext().getDatabasePath("pos_database")
-                FileOutputStream(dbFile).use { outputStream ->
+                FileOutputStream(tempDbFile).use { outputStream ->
                     inputStream.copyTo(outputStream)
                 }
             }
+
+            // Get the current database file
+            val currentDbFile = requireContext().getDatabasePath("pos_database")
+            
+            // Delete the current database file
+            if (currentDbFile.exists()) {
+                currentDbFile.delete()
+            }
+
+            // Copy the temporary file to the database location
+            tempDbFile.copyTo(currentDbFile, overwrite = true)
+            
+            // Delete the temporary file
+            tempDbFile.delete()
+
+            // Clear the database instance to force recreation
+            AppDatabase.clearInstance()
+
             Toast.makeText(context, "Database imported successfully. Please restart the app.", Toast.LENGTH_LONG).show()
             dismiss()
         } catch (e: Exception) {
