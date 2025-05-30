@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navigation_products">
+
+    <fragment
+        android:id="@+id/navigation_products"
+        android:name="com.example.pos.fragment.ProductListFragment"
+        android:label="Products">
+        <argument
+            android:name="category"
+            android:defaultValue="ALL"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_sales_order"
+        android:name="com.example.pos.fragment.SalesOrderFragment"
+        android:label="Sales Order" />
+
+</navigation> 

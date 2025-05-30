@@ -19,11 +19,15 @@ class ProductViewModel(
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     val products: StateFlow<List<Product>> = _products
 
+    private val _categories = MutableStateFlow<List<String>>(emptyList())
+    val categories: StateFlow<List<String>> = _categories
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
     init {
         loadProducts()
+        loadCategories()
     }
 
     private fun loadProducts() {
@@ -34,6 +38,18 @@ class ProductViewModel(
                 }
                 .collect { products ->
                     _products.value = products
+                }
+        }
+    }
+
+    private fun loadCategories() {
+        viewModelScope.launch {
+            categoryRepository.getAllCategories()
+                .catch { e ->
+                    _error.value = e.message
+                }
+                .collect { categories ->
+                    _categories.value = categories.map { it.name }
                 }
         }
     }

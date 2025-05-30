@@ -4,12 +4,50 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvProducts"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"
-        android:clipToPadding="false" />
+        android:orientation="vertical">
+
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/searchView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:background="@android:color/white"
+            android:elevation="4dp"
+            app:iconifiedByDefault="false"
+            app:queryHint="Search products..." />
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:tabMode="scrollable"
+            app:tabMaxWidth="0dp"
+            app:tabGravity="start"
+            app:tabTextAppearance="@style/TabTextAppearance" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvProducts"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:clipToPadding="false" />
+
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddProduct"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="Add new product"
+        android:src="@android:drawable/ic_input_add" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabSort"
