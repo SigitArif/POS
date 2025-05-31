@@ -16,7 +16,7 @@
 
     <fragment
         android:id="@+id/navigation_sales_order"
-        android:name="com.example.pos.fragment.SalesOrderFragment"
+        android:name="com.example.pos.fragment.SalesOrderListFragment"
         android:label="Sales Order" />
 
 </navigation> 
