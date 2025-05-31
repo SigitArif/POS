@@ -6,9 +6,9 @@ import com.example.pos.model.SalesOrderItem
 
 @Entity(tableName = "sales_order_items")
 data class SalesOrderItemEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val salesOrderId: Long,
+    @PrimaryKey
+    val id: String,
+    val salesOrderId: String,
     val productId: Long,
     val quantity: Int,
     val price: Double,

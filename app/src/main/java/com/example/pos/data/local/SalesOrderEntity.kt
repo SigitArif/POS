@@ -7,8 +7,8 @@ import java.util.Date
 
 @Entity(tableName = "sales_orders")
 data class SalesOrderEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
+    val id: String,
     val dateTime: Date,
     val totalRevenue: Double,
     val totalProfit: Double

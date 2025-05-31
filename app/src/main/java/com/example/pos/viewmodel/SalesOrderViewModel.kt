@@ -7,6 +7,7 @@ import com.example.pos.data.repository.SalesOrderRepository
 import com.example.pos.model.Product
 import com.example.pos.model.SalesOrder
 import com.example.pos.model.SalesOrderItem
+import com.example.pos.util.StringUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,7 @@ class SalesOrderViewModel(
             val totalProfit = products.sumOf { (product, quantity) -> (product.price - product.basePrice) * quantity }
 
             val salesOrder = SalesOrder(
+                id = StringUtils.generateRandomAlphanumeric(),
                 dateTime = Date(),
                 totalRevenue = totalRevenue,
                 totalProfit = totalProfit
@@ -45,6 +47,7 @@ class SalesOrderViewModel(
             // Create items with the sales order ID
             val items = products.map { (product, quantity) ->
                 SalesOrderItem(
+                    id = StringUtils.generateRandomAlphanumeric(),
                     salesOrderId = salesOrderId,
                     productId = product.id,
                     quantity = quantity,

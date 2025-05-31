@@ -10,10 +10,10 @@ interface SalesOrderDao {
     fun getAllSalesOrders(): Flow<List<SalesOrderEntity>>
 
     @Query("SELECT * FROM sales_orders WHERE id = :id")
-    suspend fun getSalesOrderById(id: Long): SalesOrderEntity?
+    suspend fun getSalesOrderById(id: String): SalesOrderEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(salesOrder: SalesOrderEntity): Long
+    suspend fun insert(salesOrder: SalesOrderEntity)
 
     @Update
     suspend fun update(salesOrder: SalesOrderEntity)
@@ -22,5 +22,5 @@ interface SalesOrderDao {
     suspend fun delete(salesOrder: SalesOrderEntity)
 
     @Query("DELETE FROM sales_orders WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    suspend fun deleteById(id: String)
 } 

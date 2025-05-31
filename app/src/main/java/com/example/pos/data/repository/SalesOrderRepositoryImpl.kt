@@ -16,12 +16,13 @@ class SalesOrderRepositoryImpl(
 
     override fun getAllSalesOrders(): Flow<List<SalesOrder>> = salesOrderDao.getAllSalesOrders().map { it.map { entity -> entity.toSalesOrder() } }
 
-    override suspend fun getSalesOrderItems(salesOrderId: Long): Flow<List<SalesOrderItem>> =
+    override suspend fun getSalesOrderItems(salesOrderId: String): Flow<List<SalesOrderItem>> =
         salesOrderItemDao.getItemsBySalesOrderId(salesOrderId).map { it.map { entity -> entity.toSalesOrderItem() } }
 
-    override suspend fun createSalesOrder(salesOrder: SalesOrder): Long {
+    override suspend fun createSalesOrder(salesOrder: SalesOrder): String {
         val salesOrderEntity = SalesOrderEntity.fromSalesOrder(salesOrder)
-        return salesOrderDao.insert(salesOrderEntity)
+        salesOrderDao.insert(salesOrderEntity)
+        return salesOrderEntity.id
     }
 
     override suspend fun addSalesOrderItems(items: List<SalesOrderItem>) {
