@@ -19,4 +19,9 @@
         android:name="com.example.pos.fragment.SalesOrderListFragment"
         android:label="Sales Order" />
 
+    <fragment
+        android:id="@+id/navigation_product_selection"
+        android:name="com.example.pos.fragment.ProductSelectionFragment"
+        android:label="Select Products" />
+
 </navigation> 

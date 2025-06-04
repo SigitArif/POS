@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.pos.R
 import com.example.pos.model.Product
+import com.example.pos.viewmodel.ProductViewModel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -16,7 +17,8 @@ class ProductAdapter(
     private var products: List<Product> = emptyList(),
     private val onEditClick: ((Product) -> Unit)? = null,
     private val onDeleteClick: ((Product) -> Unit)? = null,
-    private val onQuantityChange: ((Product, Int) -> Unit)? = null
+    private val onQuantityChange: ((Product, Int) -> Unit)? = null,
+    private val viewModel: ProductViewModel? = null
 ) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
 
     private val numberFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
@@ -59,8 +61,8 @@ class ProductAdapter(
         holder.btnEdit.setOnClickListener { onEditClick?.invoke(product) }
         holder.btnDelete.setOnClickListener { onDeleteClick?.invoke(product) }
 
-        // Set up quantity controls
-        var quantity = 0
+        // Get the current quantity from ViewModel
+        var quantity = viewModel?.getQuantity(product) ?: 0
         holder.tvQuantity.text = quantity.toString()
 
         holder.btnMinus.setOnClickListener {

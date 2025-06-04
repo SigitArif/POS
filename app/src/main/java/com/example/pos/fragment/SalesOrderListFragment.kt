@@ -9,6 +9,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.pos.R
@@ -51,7 +52,7 @@ class SalesOrderListFragment : Fragment() {
         fabAddOrder = view.findViewById(R.id.fabAddOrder)
         
         fabAddOrder.setOnClickListener {
-            showCreateOrderDialog()
+            findNavController().navigate(R.id.navigation_product_selection)
         }
     }
 
@@ -69,9 +70,5 @@ class SalesOrderListFragment : Fragment() {
                 }
             }
         }
-    }
-
-    private fun showCreateOrderDialog() {
-        CreateSalesOrderFragment().show(parentFragmentManager, "CreateSalesOrderFragment")
     }
 } 

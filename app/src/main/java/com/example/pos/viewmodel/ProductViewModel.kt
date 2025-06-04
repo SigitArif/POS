@@ -8,6 +8,7 @@ import com.example.pos.data.repository.ProductRepository
 import com.example.pos.model.Product
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
@@ -17,10 +18,13 @@ class ProductViewModel(
 ) : ViewModel() {
     
     private val _products = MutableStateFlow<List<Product>>(emptyList())
-    val products: StateFlow<List<Product>> = _products
+    val products: StateFlow<List<Product>> = _products.asStateFlow()
 
     private val _categories = MutableStateFlow<List<String>>(emptyList())
-    val categories: StateFlow<List<String>> = _categories
+    val categories: StateFlow<List<String>> = _categories.asStateFlow()
+
+    private val _selectedQuantities = MutableStateFlow<Map<Product, Int>>(emptyMap())
+    val selectedQuantities: StateFlow<Map<Product, Int>> = _selectedQuantities.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
@@ -143,13 +147,31 @@ class ProductViewModel(
         _error.value = null
     }
 
+    fun updateQuantity(product: Product, quantity: Int) {
+        val currentQuantities = _selectedQuantities.value.toMutableMap()
+        if (quantity > 0) {
+            currentQuantities[product] = quantity
+        } else {
+            currentQuantities.remove(product)
+        }
+        _selectedQuantities.value = currentQuantities
+    }
+
+    fun getQuantity(product: Product): Int {
+        return _selectedQuantities.value[product] ?: 0
+    }
+
+    fun clearQuantities() {
+        _selectedQuantities.value = emptyMap()
+    }
+
     class Factory(
         private val productRepository: ProductRepository,
         private val categoryRepository: CategoryRepository
     ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ProductViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
                 return ProductViewModel(productRepository, categoryRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
