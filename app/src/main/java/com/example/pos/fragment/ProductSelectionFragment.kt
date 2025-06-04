@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -75,6 +76,22 @@ class ProductSelectionFragment : Fragment() {
         observeProducts()
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Set up back press handling
+        requireActivity().onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    // Clear quantities when going back
+                    productViewModel.clearQuantities()
+                    // Pop back to sales order list
+                    findNavController().popBackStack(R.id.navigation_sales_order, false)
+                }
+            }
+        )
+    }
+
     private fun setupViews(view: View) {
         searchView = view.findViewById(R.id.searchView)
         tabLayout = view.findViewById(R.id.tabLayout)
@@ -94,8 +111,8 @@ class ProductSelectionFragment : Fragment() {
                 // Clear product quantities
                 productViewModel.clearQuantities()
                 
-                // Navigate to sales order list
-                findNavController().navigate(R.id.navigation_sales_order)
+                // Navigate to sales order list using the action
+                findNavController().navigate(R.id.action_product_selection_to_sales_order)
             }
         }
     }

@@ -17,11 +17,29 @@
     <fragment
         android:id="@+id/navigation_sales_order"
         android:name="com.example.pos.fragment.SalesOrderListFragment"
-        android:label="Sales Order" />
+        android:label="Sales Order">
+        <action
+            android:id="@+id/action_sales_order_to_product_selection"
+            app:destination="@id/navigation_product_selection"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_product_selection"
         android:name="com.example.pos.fragment.ProductSelectionFragment"
-        android:label="Select Products" />
+        android:label="Select Products">
+        <action
+            android:id="@+id/action_product_selection_to_sales_order"
+            app:destination="@id/navigation_sales_order"
+            app:popUpTo="@id/navigation_sales_order"
+            app:popUpToInclusive="true"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+    </fragment>
 
 </navigation> 

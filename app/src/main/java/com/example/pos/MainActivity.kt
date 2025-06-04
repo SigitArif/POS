@@ -6,6 +6,7 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.pos.fragment.SettingsDialog
@@ -37,6 +38,32 @@ class MainActivity : AppCompatActivity() {
 
             val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
             bottomNav.setupWithNavController(navController)
+            
+            // Handle bottom navigation item selection
+            bottomNav.setOnItemSelectedListener { item ->
+                when (item.itemId) {
+                    R.id.navigation_products -> {
+                        // Clear the back stack and navigate to products
+                        val navOptions = NavOptions.Builder()
+                            .setPopUpTo(navController.graph.startDestinationId, false)
+                            .setLaunchSingleTop(true)
+                            .build()
+                        navController.navigate(R.id.navigation_products, null, navOptions)
+                        true
+                    }
+                    R.id.navigation_sales_order -> {
+                        // Clear the back stack and navigate to sales order
+                        val navOptions = NavOptions.Builder()
+                            .setPopUpTo(navController.graph.startDestinationId, false)
+                            .setLaunchSingleTop(true)
+                            .build()
+                        navController.navigate(R.id.navigation_sales_order, null, navOptions)
+                        true
+                    }
+                    else -> false
+                }
+            }
+            
             Log.d("MainActivity", "Bottom navigation setup completed")
         } catch (e: Exception) {
             Log.e("MainActivity", "Error setting up navigation", e)
@@ -48,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         try {
             Log.d("MainActivity", "Setting up settings button")
             findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
-                SettingsDialog.newInstance().show(supportFragmentManager, "SettingsDialog")
+                SettingsDialog().show(supportFragmentManager, "settings_dialog")
             }
             Log.d("MainActivity", "Settings button setup completed")
         } catch (e: Exception) {

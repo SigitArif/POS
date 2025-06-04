@@ -52,7 +52,7 @@ class SalesOrderListFragment : Fragment() {
         fabAddOrder = view.findViewById(R.id.fabAddOrder)
         
         fabAddOrder.setOnClickListener {
-            findNavController().navigate(R.id.navigation_product_selection)
+            findNavController().navigate(R.id.action_sales_order_to_product_selection)
         }
     }
 
