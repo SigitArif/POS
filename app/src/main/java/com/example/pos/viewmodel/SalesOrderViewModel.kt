@@ -28,11 +28,21 @@ class SalesOrderViewModel(
     private val _todayProfit = MutableStateFlow(0.0)
     val todayProfit: StateFlow<Double> = _todayProfit.asStateFlow()
 
+    private val _dateRangeRevenue = MutableStateFlow(0.0)
+    val dateRangeRevenue: StateFlow<Double> = _dateRangeRevenue.asStateFlow()
+
+    private val _dateRangeProfit = MutableStateFlow(0.0)
+    val dateRangeProfit: StateFlow<Double> = _dateRangeProfit.asStateFlow()
+
+    private var selectedStartDate: Date? = null
+    private var selectedEndDate: Date? = null
+
     init {
         viewModelScope.launch {
             salesOrderRepository.getAllSalesOrders().collect { orders ->
                 _salesOrders.value = orders
                 updateTodaySummary(orders)
+                updateDateRangeSummary(orders)
             }
         }
     }
@@ -48,6 +58,43 @@ class SalesOrderViewModel(
         val todayOrders = orders.filter { it.dateTime >= startOfDay }
         _todayRevenue.value = todayOrders.sumOf { it.totalRevenue }
         _todayProfit.value = todayOrders.sumOf { it.totalProfit }
+    }
+
+    private fun updateDateRangeSummary(orders: List<SalesOrder>) {
+        if (selectedStartDate == null || selectedEndDate == null) return
+
+        val calendar = Calendar.getInstance()
+        
+        // Set start date to beginning of day
+        calendar.time = selectedStartDate!!
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val startDate = calendar.time
+
+        // Set end date to end of day
+        calendar.time = selectedEndDate!!
+        calendar.set(Calendar.HOUR_OF_DAY, 23)
+        calendar.set(Calendar.MINUTE, 59)
+        calendar.set(Calendar.SECOND, 59)
+        calendar.set(Calendar.MILLISECOND, 999)
+        val endDate = calendar.time
+
+        // Filter orders that fall within the date range (inclusive)
+        val filteredOrders = orders.filter { order ->
+            val orderDate = order.dateTime
+            orderDate >= startDate && orderDate <= endDate
+        }
+
+        _dateRangeRevenue.value = filteredOrders.sumOf { it.totalRevenue }
+        _dateRangeProfit.value = filteredOrders.sumOf { it.totalProfit }
+    }
+
+    fun setDateRange(startDate: Date, endDate: Date) {
+        selectedStartDate = startDate
+        selectedEndDate = endDate
+        updateDateRangeSummary(_salesOrders.value)
     }
 
     fun createSalesOrder(products: List<Pair<Product, Int>>) {
