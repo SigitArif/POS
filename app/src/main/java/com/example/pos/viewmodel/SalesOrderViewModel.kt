@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.Date
 
 class SalesOrderViewModel(
@@ -21,12 +22,32 @@ class SalesOrderViewModel(
     private val _salesOrders = MutableStateFlow<List<SalesOrder>>(emptyList())
     val salesOrders: StateFlow<List<SalesOrder>> = _salesOrders.asStateFlow()
 
+    private val _todayRevenue = MutableStateFlow(0.0)
+    val todayRevenue: StateFlow<Double> = _todayRevenue.asStateFlow()
+
+    private val _todayProfit = MutableStateFlow(0.0)
+    val todayProfit: StateFlow<Double> = _todayProfit.asStateFlow()
+
     init {
         viewModelScope.launch {
             salesOrderRepository.getAllSalesOrders().collect { orders ->
                 _salesOrders.value = orders
+                updateTodaySummary(orders)
             }
         }
+    }
+
+    private fun updateTodaySummary(orders: List<SalesOrder>) {
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val startOfDay = calendar.time
+
+        val todayOrders = orders.filter { it.dateTime >= startOfDay }
+        _todayRevenue.value = todayOrders.sumOf { it.totalRevenue }
+        _todayProfit.value = todayOrders.sumOf { it.totalProfit }
     }
 
     fun createSalesOrder(products: List<Pair<Product, Int>>) {
@@ -44,27 +65,25 @@ class SalesOrderViewModel(
             // Create sales order first to get the ID
             val salesOrderId = salesOrderRepository.createSalesOrder(salesOrder)
 
-            // Create items with the sales order ID
-            val items = products.map { (product, quantity) ->
+            // Create and add sales order items
+            val salesOrderItems = products.map { (product, quantity) ->
                 SalesOrderItem(
                     id = StringUtils.generateRandomAlphanumeric(),
                     salesOrderId = salesOrderId,
                     productId = product.id,
                     quantity = quantity,
                     price = product.price,
-                    profit = (product.price - product.basePrice) * quantity
+                    profit = product.price - product.basePrice
                 )
             }
-
-            // Add items to the sales order
-            salesOrderRepository.addSalesOrderItems(items)
+            salesOrderRepository.addSalesOrderItems(salesOrderItems)
         }
     }
 
     class Factory(private val salesOrderRepository: SalesOrderRepository) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SalesOrderViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
                 return SalesOrderViewModel(salesOrderRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
