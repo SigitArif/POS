@@ -35,7 +35,7 @@ class SalesOrderAdapter : ListAdapter<SalesOrder, SalesOrderAdapter.SalesOrderVi
         private val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
         fun bind(salesOrder: SalesOrder) {
-            tvOrderId.text = "Order #${salesOrder.id}"
+            tvOrderId.text = "#${salesOrder.id}"
             tvDateTime.text = dateFormat.format(salesOrder.dateTime)
             tvTotalRevenue.text = "Revenue: ${numberFormat.format(salesOrder.totalRevenue)}"
             tvTotalProfit.text = "Profit: ${numberFormat.format(salesOrder.totalProfit)}"
