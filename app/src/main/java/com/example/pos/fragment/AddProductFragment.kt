@@ -58,12 +58,15 @@ class AddProductFragment : DialogFragment() {
     }
 
     private fun setupUI() {
+        // Setup category dropdown
+        setupCategoryDropdown()
+        
         binding.addButton.setOnClickListener {
             val name = binding.nameEditText.text.toString()
             val priceStr = binding.priceEditText.text.toString()
             val basePriceStr = binding.basePriceEditText.text.toString()
             val productCode = binding.productCodeEditText.text.toString().takeIf { it.isNotBlank() }
-            val category = binding.categoryEditText.text.toString()
+            val category = binding.categoryAutoComplete.text.toString()
 
             if (name.isBlank()) {
                 Toast.makeText(context, "Please enter a product name", Toast.LENGTH_SHORT).show()
@@ -83,11 +86,43 @@ class AddProductFragment : DialogFragment() {
                 }
 
                 val basePrice = basePriceStr.toDoubleOrNull() ?: price
+                
+                // If it's a new category, add it to the database
+                if (!categoryViewModel.categories.value.map { it.name }.contains(category)) {
+                    categoryViewModel.addCategory(category)
+                }
+                
                 productViewModel.addProduct(name, price, basePrice, productCode, category)
                 dismiss()
             } catch (e: NumberFormatException) {
                 Toast.makeText(context, "Please enter valid prices", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+    
+    private fun setupCategoryDropdown() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                categoryViewModel.categories.collect { categories ->
+                    // Filter out the "ALL" category as it's not a real category
+                    val categoryNames = categories
+                        .filter { it.name != "ALL" }
+                        .map { it.name }
+                    
+                    val adapter = android.widget.ArrayAdapter(
+                        requireContext(),
+                        android.R.layout.simple_dropdown_item_1line,
+                        categoryNames
+                    )
+                    
+                    binding.categoryAutoComplete.setAdapter(adapter)
+                }
+            }
+        }
+        
+        // Allow user to enter custom text for new categories
+        binding.categoryAutoComplete.setOnItemClickListener { _, _, _, _ ->
+            // Item selected, nothing special to do
         }
     }
 
@@ -108,4 +143,4 @@ class AddProductFragment : DialogFragment() {
         super.onDestroyView()
         _binding = null
     }
-} 
+}

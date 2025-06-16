@@ -66,12 +66,16 @@ class EditProductFragment : DialogFragment() {
 
     private fun setupUI() {
         binding.addButton.text = "Update Product"
+        
+        // Setup category dropdown
+        setupCategoryDropdown()
+        
         binding.addButton.setOnClickListener {
             val name = binding.nameEditText.text.toString()
             val priceStr = binding.priceEditText.text.toString()
             val basePriceStr = binding.basePriceEditText.text.toString()
             val productCode = binding.productCodeEditText.text.toString().takeIf { it.isNotBlank() }
-            val category = binding.categoryEditText.text.toString()
+            val category = binding.categoryAutoComplete.text.toString()
 
             if (name.isBlank()) {
                 Toast.makeText(context, "Please enter a product name", Toast.LENGTH_SHORT).show()
@@ -91,6 +95,12 @@ class EditProductFragment : DialogFragment() {
                 }
 
                 val basePrice = basePriceStr.toDoubleOrNull() ?: price
+                
+                // If it's a new category, add it to the database
+                if (!categoryViewModel.categories.value.map { it.name }.contains(category)) {
+                    categoryViewModel.addCategory(category)
+                }
+                
                 productViewModel.updateProduct(
                     product.copy(
                         name = name,
@@ -125,7 +135,33 @@ class EditProductFragment : DialogFragment() {
         binding.priceEditText.setText(product.price.toString())
         binding.basePriceEditText.setText(product.basePrice.toString())
         binding.productCodeEditText.setText(product.productCode)
-        binding.categoryEditText.setText(product.category)
+        binding.categoryAutoComplete.setText(product.category)
+    }
+    
+    private fun setupCategoryDropdown() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                categoryViewModel.categories.collect { categories ->
+                    // Filter out the "ALL" category as it's not a real category
+                    val categoryNames = categories
+                        .filter { it.name != "ALL" }
+                        .map { it.name }
+                    
+                    val adapter = android.widget.ArrayAdapter(
+                        requireContext(),
+                        android.R.layout.simple_dropdown_item_1line,
+                        categoryNames
+                    )
+                    
+                    binding.categoryAutoComplete.setAdapter(adapter)
+                }
+            }
+        }
+        
+        // Allow user to enter custom text for new categories
+        binding.categoryAutoComplete.setOnItemClickListener { _, _, _, _ ->
+            // Item selected, nothing special to do
+        }
     }
 
     override fun onDestroyView() {
@@ -142,4 +178,4 @@ class EditProductFragment : DialogFragment() {
             }
         }
     }
-} 
+}
