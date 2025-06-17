@@ -18,7 +18,7 @@ import com.example.pos.data.local.dao.SalesOrderItemDao
         SalesOrderEntity::class,
         SalesOrderItemEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -120,6 +120,104 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                try {
+                    // Check if the table exists first
+                    val cursor = database.query("SELECT name FROM sqlite_master WHERE type='table' AND name='sales_order_items'")
+                    val tableExists = cursor.count > 0
+                    cursor.close()
+                    
+                    if (tableExists) {
+                        // Check if the table already has the new columns
+                        val tableInfo = database.query("PRAGMA table_info(sales_order_items)")
+                        val columnNames = mutableListOf<String>()
+                        val nameColumnIndex = tableInfo.getColumnIndex("name")
+                        if (nameColumnIndex >= 0) { // Check if the column exists
+                            while (tableInfo.moveToNext()) {
+                                val columnName = tableInfo.getString(nameColumnIndex)
+                                columnNames.add(columnName)
+                            }
+                        } else {
+                            android.util.Log.e("AppDatabase", "Column 'name' not found in PRAGMA table_info result")
+                        }
+                        tableInfo.close()
+                        
+                        val needsMigration = !columnNames.contains("productName") || 
+                                          !columnNames.contains("productCategory") || 
+                                          !columnNames.contains("productCode")
+                        
+                        if (needsMigration) {
+                            // Create temporary table with new schema
+                            database.execSQL("""
+                                CREATE TABLE IF NOT EXISTS sales_order_items_new (
+                                    id TEXT PRIMARY KEY NOT NULL,
+                                    salesOrderId TEXT NOT NULL,
+                                    productId INTEGER NOT NULL,
+                                    quantity INTEGER NOT NULL,
+                                    price REAL NOT NULL,
+                                    profit REAL NOT NULL,
+                                    productCode TEXT,
+                                    productName TEXT NOT NULL DEFAULT '',
+                                    productCategory TEXT NOT NULL DEFAULT ''
+                                )
+                            """)
+
+                            // Copy data from old table to new table
+                            database.execSQL("""
+                                INSERT INTO sales_order_items_new (id, salesOrderId, productId, quantity, price, profit, productCode, productName, productCategory)
+                                SELECT id, salesOrderId, productId, quantity, price, profit, NULL, '', ''
+                                FROM sales_order_items
+                            """)
+
+                            // Drop old table
+                            database.execSQL("DROP TABLE sales_order_items")
+
+                            // Rename new table to original name
+                            database.execSQL("ALTER TABLE sales_order_items_new RENAME TO sales_order_items")
+                        }
+                    } else {
+                        // If table doesn't exist, create it from scratch
+                        database.execSQL("""
+                            CREATE TABLE IF NOT EXISTS sales_order_items (
+                                id TEXT PRIMARY KEY NOT NULL,
+                                salesOrderId TEXT NOT NULL,
+                                productId INTEGER NOT NULL,
+                                quantity INTEGER NOT NULL,
+                                price REAL NOT NULL,
+                                profit REAL NOT NULL,
+                                productCode TEXT,
+                                productName TEXT NOT NULL DEFAULT '',
+                                productCategory TEXT NOT NULL DEFAULT ''
+                            )
+                        """)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("AppDatabase", "Error during migration 6-7", e)
+                    // Fallback: recreate the table if anything goes wrong
+                    try {
+                        database.execSQL("DROP TABLE IF EXISTS sales_order_items")
+                        database.execSQL("""
+                            CREATE TABLE sales_order_items (
+                                id TEXT PRIMARY KEY NOT NULL,
+                                salesOrderId TEXT NOT NULL,
+                                productId INTEGER NOT NULL,
+                                quantity INTEGER NOT NULL,
+                                price REAL NOT NULL,
+                                profit REAL NOT NULL,
+                                productCode TEXT,
+                                productName TEXT NOT NULL DEFAULT '',
+                                productCategory TEXT NOT NULL DEFAULT ''
+                            )
+                        """)
+                    } catch (e2: Exception) {
+                        android.util.Log.e("AppDatabase", "Failed to recreate table during migration fallback", e2)
+                        // Last resort: do nothing and let Room handle it
+                    }
+                }
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -127,7 +225,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pos_database"
                 )
-                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .fallbackToDestructiveMigration() // Add fallback option as last resort
                 .build()
                 INSTANCE = instance
                 instance
@@ -138,4 +237,4 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE = null
         }
     }
-} 
+}

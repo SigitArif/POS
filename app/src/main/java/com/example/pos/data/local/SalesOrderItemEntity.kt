@@ -12,7 +12,10 @@ data class SalesOrderItemEntity(
     val productId: Long,
     val quantity: Int,
     val price: Double,
-    val profit: Double
+    val profit: Double,
+    val productCode: String?,
+    val productName: String,
+    val productCategory: String
 ) {
     fun toSalesOrderItem() = SalesOrderItem(
         id = id,
@@ -20,7 +23,10 @@ data class SalesOrderItemEntity(
         productId = productId,
         quantity = quantity,
         price = price,
-        profit = profit
+        profit = profit,
+        productCode = productCode,
+        productName = productName,
+        productCategory = productCategory
     )
 
     companion object {
@@ -30,7 +36,10 @@ data class SalesOrderItemEntity(
             productId = item.productId,
             quantity = item.quantity,
             price = item.price,
-            profit = item.profit
+            profit = item.profit,
+            productCode = item.productCode,
+            productName = item.productName.ifEmpty { "" },
+            productCategory = item.productCategory.ifEmpty { "" }
         )
     }
-} 
+}

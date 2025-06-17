@@ -15,5 +15,8 @@ data class SalesOrderItem(
     val productId: Long,
     val quantity: Int,
     val price: Double,
-    val profit: Double
-) 
+    val profit: Double,
+    val productCode: String? = null,
+    val productName: String = "",
+    val productCategory: String = ""
+)

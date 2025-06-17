@@ -39,10 +39,15 @@ class SalesOrderViewModel(
 
     init {
         viewModelScope.launch {
-            salesOrderRepository.getAllSalesOrders().collect { orders ->
-                _salesOrders.value = orders
-                updateTodaySummary(orders)
-                updateDateRangeSummary(orders)
+            try {
+                salesOrderRepository.getAllSalesOrders().collect { orders ->
+                    _salesOrders.value = orders
+                    updateTodaySummary(orders)
+                    updateDateRangeSummary(orders)
+                    android.util.Log.d("SalesOrderViewModel", "Loaded ${orders.size} sales orders")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SalesOrderViewModel", "Error loading sales orders", e)
             }
         }
     }
@@ -96,6 +101,22 @@ class SalesOrderViewModel(
         selectedEndDate = endDate
         updateDateRangeSummary(_salesOrders.value)
     }
+    
+    fun refreshSalesOrders() {
+        android.util.Log.d("SalesOrderViewModel", "Manually refreshing sales orders")
+        viewModelScope.launch {
+            try {
+                salesOrderRepository.getAllSalesOrders().collect { orders ->
+                    _salesOrders.value = orders
+                    updateTodaySummary(orders)
+                    updateDateRangeSummary(orders)
+                    android.util.Log.d("SalesOrderViewModel", "Refreshed ${orders.size} sales orders")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SalesOrderViewModel", "Error refreshing sales orders", e)
+            }
+        }
+    }
 
     fun createSalesOrder(products: List<Pair<Product, Int>>) {
         viewModelScope.launch {
@@ -120,7 +141,10 @@ class SalesOrderViewModel(
                     productId = product.id,
                     quantity = quantity,
                     price = product.price,
-                    profit = product.price - product.basePrice
+                    profit = product.price - product.basePrice,
+                    productCode = product.productCode,
+                    productName = product.name.ifEmpty { "Unknown" },
+                    productCategory = product.category.ifEmpty { "Uncategorized" }
                 )
             }
             salesOrderRepository.addSalesOrderItems(salesOrderItems)
@@ -136,4 +160,4 @@ class SalesOrderViewModel(
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
-} 
+}

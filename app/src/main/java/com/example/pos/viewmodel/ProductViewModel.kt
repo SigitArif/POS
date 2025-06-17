@@ -36,13 +36,20 @@ class ProductViewModel(
 
     private fun loadProducts() {
         viewModelScope.launch {
-            productRepository.getAllProducts()
-                .catch { e ->
-                    _error.value = e.message
-                }
-                .collect { products ->
-                    _products.value = products
-                }
+            try {
+                productRepository.getAllProducts()
+                    .catch { e ->
+                        _error.value = "Failed to load products: ${e.message}"
+                        android.util.Log.e("ProductViewModel", "Error loading products", e)
+                    }
+                    .collect { products ->
+                        _products.value = products
+                        android.util.Log.d("ProductViewModel", "Loaded ${products.size} products")
+                    }
+            } catch (e: Exception) {
+                _error.value = "Exception loading products: ${e.message}"
+                android.util.Log.e("ProductViewModel", "Exception in loadProducts", e)
+            }
         }
     }
 
@@ -164,6 +171,11 @@ class ProductViewModel(
     fun clearQuantities() {
         _selectedQuantities.value = emptyMap()
     }
+    
+    fun refreshProducts() {
+        android.util.Log.d("ProductViewModel", "Manually refreshing products")
+        loadProducts()
+    }
 
     class Factory(
         private val productRepository: ProductRepository,
@@ -177,4 +189,4 @@ class ProductViewModel(
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
-} 
+}
