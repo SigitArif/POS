@@ -4,10 +4,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.pos.R
+import com.example.pos.fragment.SalesOrderListFragmentDirections
 import com.example.pos.model.SalesOrder
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -33,6 +35,17 @@ class SalesOrderAdapter : ListAdapter<SalesOrder, SalesOrderAdapter.SalesOrderVi
         private val tvTotalRevenue: TextView = itemView.findViewById(R.id.tvTotalRevenue)
         private val tvTotalProfit: TextView = itemView.findViewById(R.id.tvTotalProfit)
         private val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+
+        init {
+            itemView.setOnClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val salesOrder = getItem(position)
+                    val action = SalesOrderListFragmentDirections.actionSalesOrderToDetail(salesOrder.id)
+                    itemView.findNavController().navigate(action)
+                }
+            }
+        }
 
         fun bind(salesOrder: SalesOrder) {
             tvOrderId.text = "#${salesOrder.id}"

@@ -22,6 +22,9 @@ class SalesOrderViewModel(
     private val _salesOrders = MutableStateFlow<List<SalesOrder>>(emptyList())
     val salesOrders: StateFlow<List<SalesOrder>> = _salesOrders.asStateFlow()
 
+    private val _salesOrderItems = MutableStateFlow<List<SalesOrderItem>>(emptyList())
+    val salesOrderItems: StateFlow<List<SalesOrderItem>> = _salesOrderItems.asStateFlow()
+
     private val _todayRevenue = MutableStateFlow(0.0)
     val todayRevenue: StateFlow<Double> = _todayRevenue.asStateFlow()
 
@@ -38,16 +41,32 @@ class SalesOrderViewModel(
     private var selectedEndDate: Date? = null
 
     init {
+        refreshSalesOrders()
+    }
+
+    fun refreshSalesOrders() {
         viewModelScope.launch {
             try {
                 salesOrderRepository.getAllSalesOrders().collect { orders ->
                     _salesOrders.value = orders
                     updateTodaySummary(orders)
                     updateDateRangeSummary(orders)
-                    android.util.Log.d("SalesOrderViewModel", "Loaded ${orders.size} sales orders")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("SalesOrderViewModel", "Error loading sales orders", e)
+                android.util.Log.e("SalesOrderViewModel", "Error refreshing sales orders", e)
+            }
+        }
+    }
+
+    fun getSalesOrderItems(salesOrderId: String) {
+        viewModelScope.launch {
+            try {
+                salesOrderRepository.getSalesOrderItems(salesOrderId).collect { items ->
+                    _salesOrderItems.value = items
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SalesOrderViewModel", "Error getting sales order items", e)
+                _salesOrderItems.value = emptyList()
             }
         }
     }
@@ -60,31 +79,22 @@ class SalesOrderViewModel(
         calendar.set(Calendar.MILLISECOND, 0)
         val startOfDay = calendar.time
 
-        val todayOrders = orders.filter { it.dateTime >= startOfDay }
+        calendar.add(Calendar.DAY_OF_MONTH, 1)
+        val endOfDay = calendar.time
+
+        // Filter orders that fall within today
+        val todayOrders = orders.filter { order ->
+            val orderDate = order.dateTime
+            orderDate >= startOfDay && orderDate < endOfDay
+        }
+
         _todayRevenue.value = todayOrders.sumOf { it.totalRevenue }
         _todayProfit.value = todayOrders.sumOf { it.totalProfit }
     }
 
     private fun updateDateRangeSummary(orders: List<SalesOrder>) {
-        if (selectedStartDate == null || selectedEndDate == null) return
-
-        val calendar = Calendar.getInstance()
-        
-        // Set start date to beginning of day
-        calendar.time = selectedStartDate!!
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startDate = calendar.time
-
-        // Set end date to end of day
-        calendar.time = selectedEndDate!!
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        calendar.set(Calendar.MILLISECOND, 999)
-        val endDate = calendar.time
+        val startDate = selectedStartDate ?: return
+        val endDate = selectedEndDate ?: return
 
         // Filter orders that fall within the date range (inclusive)
         val filteredOrders = orders.filter { order ->
@@ -100,22 +110,6 @@ class SalesOrderViewModel(
         selectedStartDate = startDate
         selectedEndDate = endDate
         updateDateRangeSummary(_salesOrders.value)
-    }
-    
-    fun refreshSalesOrders() {
-        android.util.Log.d("SalesOrderViewModel", "Manually refreshing sales orders")
-        viewModelScope.launch {
-            try {
-                salesOrderRepository.getAllSalesOrders().collect { orders ->
-                    _salesOrders.value = orders
-                    updateTodaySummary(orders)
-                    updateDateRangeSummary(orders)
-                    android.util.Log.d("SalesOrderViewModel", "Refreshed ${orders.size} sales orders")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SalesOrderViewModel", "Error refreshing sales orders", e)
-            }
-        }
     }
 
     fun createSalesOrder(products: List<Pair<Product, Int>>) {
@@ -143,11 +137,14 @@ class SalesOrderViewModel(
                     price = product.price,
                     profit = product.price - product.basePrice,
                     productCode = product.productCode,
-                    productName = product.name.ifEmpty { "Unknown" },
-                    productCategory = product.category.ifEmpty { "Uncategorized" }
+                    productName = product.name,
+                    productCategory = product.category
                 )
             }
             salesOrderRepository.addSalesOrderItems(salesOrderItems)
+
+            // Refresh the sales orders list
+            refreshSalesOrders()
         }
     }
 

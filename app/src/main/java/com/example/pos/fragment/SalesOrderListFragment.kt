@@ -18,6 +18,7 @@ import com.example.pos.R
 import com.example.pos.adapter.SalesOrderAdapter
 import com.example.pos.data.local.AppDatabase
 import com.example.pos.data.repository.SalesOrderRepositoryImpl
+import com.example.pos.databinding.FragmentSalesOrderListBinding
 import com.example.pos.viewmodel.SalesOrderViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.flow.collectLatest
@@ -29,6 +30,8 @@ import java.util.Date
 import java.util.Locale
 
 class SalesOrderListFragment : Fragment() {
+    private var _binding: FragmentSalesOrderListBinding? = null
+    private val binding get() = _binding!!
     private lateinit var recyclerView: RecyclerView
     private lateinit var fabAddOrder: FloatingActionButton
     private lateinit var tvTodayRevenue: TextView
@@ -48,17 +51,24 @@ class SalesOrderListFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_sales_order_list, container, false)
+    ): View {
+        _binding = FragmentSalesOrderListBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupViews(view)
-        setupRecyclerView(view)
+        setupRecyclerView()
         observeSalesOrders()
         observeTodaySummary()
         observeDateRangeSummary()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when returning to this fragment
+        viewModel.refreshSalesOrders()
     }
 
     private fun setupViews(view: View) {
@@ -77,10 +87,11 @@ class SalesOrderListFragment : Fragment() {
         }
     }
 
-    private fun setupRecyclerView(view: View) {
-        recyclerView = view.findViewById(R.id.rvSalesOrders)
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = adapter
+    private fun setupRecyclerView() {
+        binding.rvSalesOrders.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = this@SalesOrderListFragment.adapter
+        }
     }
 
     private fun observeSalesOrders() {
@@ -147,5 +158,10 @@ class SalesOrderListFragment : Fragment() {
         ) { startDate, endDate ->
             viewModel.setDateRange(startDate, endDate)
         }.show(childFragmentManager, "date_range_dialog")
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 } 
