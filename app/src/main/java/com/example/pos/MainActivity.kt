@@ -60,6 +60,15 @@ class MainActivity : AppCompatActivity() {
                         navController.navigate(R.id.navigation_sales_order, null, navOptions)
                         true
                     }
+                    R.id.navigation_restock -> {
+                        // Clear the back stack and navigate to restock
+                        val navOptions = NavOptions.Builder()
+                            .setPopUpTo(navController.graph.startDestinationId, false)
+                            .setLaunchSingleTop(true)
+                            .build()
+                        navController.navigate(R.id.navigation_restock, null, navOptions)
+                        true
+                    }
                     else -> false
                 }
             }

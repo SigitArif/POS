@@ -29,6 +29,19 @@
     </fragment>
 
     <fragment
+        android:id="@+id/navigation_restock"
+        android:name="com.example.pos.fragment.RestockActivityListFragment"
+        android:label="Restock"
+        tools:layout="@layout/fragment_restock_activity_list">
+        <action
+            android:id="@+id/action_restock_activity_list_to_restock_activity_detail"
+            app:destination="@id/restock_activity_detail" />
+        <action
+            android:id="@+id/action_restock_activity_list_to_create_restock_activity"
+            app:destination="@id/create_restock_activity" />
+    </fragment>
+
+    <fragment
         android:id="@+id/navigation_product_selection"
         android:name="com.example.pos.fragment.ProductSelectionFragment"
         android:label="Select Products">
@@ -52,5 +65,21 @@
             android:name="salesOrderId"
             app:argType="string" />
     </fragment>
+
+    <fragment
+        android:id="@+id/restock_activity_detail"
+        android:name="com.example.pos.fragment.RestockActivityDetailFragment"
+        android:label="Restock Activity Detail"
+        tools:layout="@layout/fragment_restock_activity_detail">
+        <argument
+            android:name="activityId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/create_restock_activity"
+        android:name="com.example.pos.fragment.CreateRestockActivityFragment"
+        android:label="Create Restock Activity"
+        tools:layout="@layout/fragment_create_restock_activity" />
 
 </navigation> 

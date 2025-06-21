@@ -8,6 +8,8 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.pos.data.local.Converters
+import com.example.pos.data.local.dao.ActivityDao
+import com.example.pos.data.local.dao.ActivityItemDao
 import com.example.pos.data.local.dao.SalesOrderDao
 import com.example.pos.data.local.dao.SalesOrderItemDao
 
@@ -16,9 +18,11 @@ import com.example.pos.data.local.dao.SalesOrderItemDao
         ProductEntity::class,
         CategoryEntity::class,
         SalesOrderEntity::class,
-        SalesOrderItemEntity::class
+        SalesOrderItemEntity::class,
+        ActivityEntity::class,
+        ActivityItemEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -27,6 +31,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun salesOrderDao(): SalesOrderDao
     abstract fun salesOrderItemDao(): SalesOrderItemDao
+    abstract fun activityDao(): ActivityDao
+    abstract fun activityItemDao(): ActivityItemDao
 
     companion object {
         @Volatile
@@ -218,6 +224,39 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create activities table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS activities (
+                        activityId TEXT PRIMARY KEY NOT NULL,
+                        activityType TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """)
+
+                // Create activity_items table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS activity_items (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        activityId TEXT NOT NULL,
+                        productId INTEGER NOT NULL,
+                        productName TEXT NOT NULL,
+                        productCategory TEXT NOT NULL,
+                        quantity INTEGER NOT NULL,
+                        isFulfill INTEGER NOT NULL,
+                        FOREIGN KEY (activityId) REFERENCES activities (activityId) ON DELETE CASCADE
+                    )
+                """)
+
+//                // Create indexes for better performance
+//                database.execSQL("CREATE INDEX IF NOT EXISTS index_activity_items_activityId ON activity_items(activityId)")
+//                database.execSQL("CREATE INDEX IF NOT EXISTS index_activity_items_productId ON activity_items(productId)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -225,7 +264,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pos_database"
                 )
-                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .fallbackToDestructiveMigration() // Add fallback option as last resort
                 .build()
                 INSTANCE = instance

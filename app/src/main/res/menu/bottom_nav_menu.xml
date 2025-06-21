@@ -8,4 +8,8 @@
         android:id="@+id/navigation_sales_order"
         android:icon="@android:drawable/ic_menu_send"
         android:title="Sales Order" />
+    <item
+        android:id="@+id/navigation_restock"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="Restock" />
 </menu> 
