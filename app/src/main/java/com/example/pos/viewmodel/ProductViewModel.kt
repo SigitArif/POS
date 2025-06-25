@@ -35,8 +35,12 @@ class ProductViewModel(
     }
 
     private fun loadProducts() {
+        android.util.Log.d("ProductViewModel", "=== loadProducts() called ===")
+        android.util.Log.d("ProductViewModel", "Stack trace: ${Thread.currentThread().stackTrace.take(10).joinToString("\n")}")
+        
         viewModelScope.launch {
             try {
+                android.util.Log.d("ProductViewModel", "Starting product collection...")
                 productRepository.getAllProducts()
                     .catch { e ->
                         _error.value = "Failed to load products: ${e.message}"
@@ -174,7 +178,8 @@ class ProductViewModel(
     
     fun refreshProducts() {
         android.util.Log.d("ProductViewModel", "Manually refreshing products")
-        loadProducts()
+        // Don't call loadProducts() again since it's already running in init
+        // The Flow will automatically update when the database changes
     }
 
     class Factory(

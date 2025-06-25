@@ -1,5 +1,6 @@
 package com.example.pos.data.repository
 
+import androidx.room.withTransaction
 import com.example.pos.data.local.AppDatabase
 import com.example.pos.data.local.ActivityEntity
 import com.example.pos.data.local.ActivityItemEntity
@@ -70,5 +71,12 @@ class ActivityRepositoryImpl(private val database: AppDatabase) : ActivityReposi
     
     override suspend fun deleteActivityItemsByActivityId(activityId: String) {
         database.activityItemDao().deleteByActivityId(activityId)
+    }
+    
+    suspend fun createActivityWithItems(activity: Activity, activityItems: List<ActivityItem>) {
+        database.withTransaction {
+            database.activityDao().insert(ActivityEntity.fromActivity(activity))
+            database.activityItemDao().insertAll(activityItems.map { ActivityItemEntity.fromActivityItem(it) })
+        }
     }
 } 

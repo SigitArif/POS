@@ -31,7 +31,7 @@ class CreateRestockActivityFragment : Fragment() {
         val activityRepository = ActivityRepositoryImpl(database)
         ActivityViewModel.Factory(activityRepository)
     }
-    private val productViewModel: ProductViewModel by viewModels {
+    private val productViewModel: ProductViewModel by viewModels(ownerProducer = { this }) {
         val database = AppDatabase.getDatabase(requireContext())
         val productRepository = ProductRepositoryImpl(database.productDao())
         val categoryRepository = CategoryRepositoryImpl(database.categoryDao())
@@ -59,7 +59,6 @@ class CreateRestockActivityFragment : Fragment() {
         setupRecyclerView()
         setupObservers()
         setupClickListeners()
-        loadProducts()
     }
 
     private fun setupViews(view: View) {
@@ -100,10 +99,6 @@ class CreateRestockActivityFragment : Fragment() {
         }
     }
 
-    private fun loadProducts() {
-        productViewModel.refreshProducts()
-    }
-
     private fun updateCreateButtonState() {
         val selectedProducts = adapter.getSelectedProducts()
         val hasValidSelections = selectedProducts.any { it.second > 0 }
@@ -116,8 +111,15 @@ class CreateRestockActivityFragment : Fragment() {
     }
 
     private fun createRestockActivity() {
+        android.util.Log.d("CreateRestockActivityFragment", "Starting createRestockActivity")
+        
         val selectedProducts = adapter.getSelectedProducts()
-        if (selectedProducts.isEmpty()) return
+        if (selectedProducts.isEmpty()) {
+            android.util.Log.d("CreateRestockActivityFragment", "No products selected")
+            return
+        }
+
+        android.util.Log.d("CreateRestockActivityFragment", "Selected products: $selectedProducts")
 
         // Get product names and categories
         val productNames = mutableMapOf<Long, String>()
@@ -130,8 +132,10 @@ class CreateRestockActivityFragment : Fragment() {
             }
         }
 
+        android.util.Log.d("CreateRestockActivityFragment", "Calling activityViewModel.createRestockActivity")
         activityViewModel.createRestockActivity(selectedProducts, productNames, productCategories)
         
+        android.util.Log.d("CreateRestockActivityFragment", "Navigating back to activity list")
         // Navigate back to activity list
         findNavController().navigateUp()
     }

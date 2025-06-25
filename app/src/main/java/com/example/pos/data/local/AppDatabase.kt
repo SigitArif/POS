@@ -251,9 +251,9 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 """)
 
-//                // Create indexes for better performance
-//                database.execSQL("CREATE INDEX IF NOT EXISTS index_activity_items_activityId ON activity_items(activityId)")
-//                database.execSQL("CREATE INDEX IF NOT EXISTS index_activity_items_productId ON activity_items(productId)")
+                // Create indexes for better performance
+                // database.execSQL("CREATE INDEX IF NOT EXISTS index_activity_items_activityId ON activity_items(activityId)")
+                // database.execSQL("CREATE INDEX IF NOT EXISTS index_activity_items_productId ON activity_items(productId)")
             }
         }
 
