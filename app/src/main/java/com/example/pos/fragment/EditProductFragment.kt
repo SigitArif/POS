@@ -135,7 +135,7 @@ class EditProductFragment : DialogFragment() {
         binding.priceEditText.setText(product.price.toString())
         binding.basePriceEditText.setText(product.basePrice.toString())
         binding.productCodeEditText.setText(product.productCode)
-        binding.categoryAutoComplete.setText(product.category)
+        binding.categoryAutoComplete.setText(product.category.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() })
     }
     
     private fun setupCategoryDropdown() {
