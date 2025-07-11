@@ -39,10 +39,7 @@ class ProductSelectionFragment : Fragment() {
     private lateinit var fabSort: FloatingActionButton
     private lateinit var tvTotal: TextView
     private lateinit var btnCreateOrder: MaterialButton
-    private var adapter: ProductAdapter? = null
-    private var isAscending = true
-    private var category: String = "ALL"
-    private var searchQuery: String = ""
+    private lateinit var adapter: ProductAdapter
     private val numberFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
 
     private val productViewModel: ProductViewModel by viewModels {
@@ -73,7 +70,7 @@ class ProductSelectionFragment : Fragment() {
         setupSearchView()
         setupRecyclerView()
         setupFab()
-        observeProducts()
+        observeViewModel()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -136,12 +133,6 @@ class ProductSelectionFragment : Fragment() {
                     }
                     
                     // Select the current category tab if it exists
-                    for (i in 0 until tabLayout.tabCount) {
-                        if (tabLayout.getTabAt(i)?.text.toString() == category) {
-                            tabLayout.selectTab(tabLayout.getTabAt(i))
-                            break
-                        }
-                    }
                 }
             }
         }
@@ -149,12 +140,9 @@ class ProductSelectionFragment : Fragment() {
         // Handle tab selection
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
-                category = tab?.text.toString()
-                productViewModel.products.value?.let { products ->
-                    updateProductList(products)
-                }
+                productViewModel.setCategory(tab?.text.toString() ?: "ALL")
             }
-            
+
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
@@ -167,10 +155,7 @@ class ProductSelectionFragment : Fragment() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                searchQuery = newText ?: ""
-                productViewModel.products.value?.let { products ->
-                    updateProductList(products)
-                }
+                productViewModel.setSearchQuery(newText ?: "")
                 return true
             }
         })
@@ -178,10 +163,8 @@ class ProductSelectionFragment : Fragment() {
 
     private fun setupRecyclerView() {
         adapter = ProductAdapter(
-            products = emptyList(),
             onQuantityChange = { product, quantity ->
                 productViewModel.updateQuantity(product, quantity)
-                updateTotal()
             },
             viewModel = productViewModel
         )
@@ -190,55 +173,37 @@ class ProductSelectionFragment : Fragment() {
 
     private fun setupFab() {
         fabSort.setOnClickListener {
-            isAscending = !isAscending
-            updateSortButtonIcon()
-            productViewModel.products.value?.let { products ->
-                updateProductList(products)
-            }
+            productViewModel.toggleSortOrder()
         }
-        updateSortButtonIcon()
     }
 
-    private fun updateSortButtonIcon() {
+    private fun updateSortButtonIcon(isAscending: Boolean) {
         fabSort.setImageResource(
             if (isAscending) R.drawable.ic_sort_ascending
             else R.drawable.ic_sort_descending
         )
     }
 
-    private fun observeProducts() {
+    private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                productViewModel.products.collectLatest { products ->
-                    updateProductList(products)
+                launch {
+                    productViewModel.products.collectLatest { products ->
+                        adapter.submitList(products)
+                    }
+                }
+                launch {
+                    productViewModel.selectedQuantities.collect { quantities ->
+                        updateTotal()
+                    }
+                }
+                launch {
+                    productViewModel.isSortAscending().collectLatest { isAscending ->
+                        updateSortButtonIcon(isAscending)
+                    }
                 }
             }
         }
-
-        // Observe selected quantities
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                productViewModel.selectedQuantities.collect { quantities ->
-                    updateTotal()
-                }
-            }
-        }
-    }
-
-    private fun updateProductList(products: List<Product>) {
-        val filteredProducts = products.filter { product ->
-            val matchesCategory = category == "ALL" || product.category.equals(category, ignoreCase = true)
-            val matchesSearch = searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true)
-            matchesCategory && matchesSearch
-        }.sortedWith(
-            if (isAscending) {
-                compareBy { it.name }
-            } else {
-                compareByDescending { it.name }
-            }
-        )
-
-        adapter?.updateProducts(filteredProducts)
     }
 
     private fun updateTotal() {

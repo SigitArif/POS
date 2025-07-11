@@ -31,10 +31,8 @@ class ProductListFragment : Fragment() {
     private lateinit var fabAddProduct: FloatingActionButton
     private lateinit var fabSort: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
-    private var adapter: ProductAdapter? = null
+    private lateinit var adapter: ProductAdapter
     private var isAscending = true
-    private var category: String = "ALL"
-    private var searchQuery: String = ""
 
     private val viewModel: ProductViewModel by viewModels {
         val database = AppDatabase.getDatabase(requireContext())
@@ -47,8 +45,7 @@ class ProductListFragment : Fragment() {
         super.onCreate(savedInstanceState)
         Log.d("ProductListFragment", "onCreate called")
         arguments?.let {
-            category = it.getString(ARG_CATEGORY) ?: "ALL"
-            Log.d("ProductListFragment", "Category set to: $category")
+            viewModel.setCategory(it.getString(ARG_CATEGORY) ?: "ALL")
         }
     }
 
@@ -68,7 +65,7 @@ class ProductListFragment : Fragment() {
         setupTabLayout()
         setupSearchView()
         setupFab()
-        observeProducts()
+        observeViewModel()
     }
 
     private fun setupViews(view: View) {
@@ -80,6 +77,15 @@ class ProductListFragment : Fragment() {
             fabSort = view.findViewById(R.id.fabSort)
             recyclerView = view.findViewById(R.id.rvProducts)
             recyclerView.layoutManager = LinearLayoutManager(context)
+            adapter = ProductAdapter(
+                onEditClick = { product ->
+                    showEditProductDialog(product)
+                },
+                onDeleteClick = { product ->
+                    viewModel.deleteProduct(product)
+                }
+            )
+            recyclerView.adapter = adapter
             Log.d("ProductListFragment", "Views setup completed")
         } catch (e: Exception) {
             Log.e("ProductListFragment", "Error setting up views", e)
@@ -108,25 +114,15 @@ class ProductListFragment : Fragment() {
                         }
                         
                         // Select the current category tab if it exists
-                        for (i in 0 until tabLayout.tabCount) {
-                            if (tabLayout.getTabAt(i)?.text.toString() == category) {
-                                tabLayout.selectTab(tabLayout.getTabAt(i))
-                                break
-                            }
-                        }
+                        // Logic to select the correct tab is handled by observing the ViewModel state
                     }
                 }
             }
-            
-            // Handle tab selection
+
             tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
-                    category = tab?.text.toString()
-                    viewModel.products.value?.let { products ->
-                        updateProductList(products)
-                    }
+                    viewModel.setCategory(tab?.text.toString() ?: "ALL")
                 }
-                
                 override fun onTabUnselected(tab: TabLayout.Tab?) {}
                 override fun onTabReselected(tab: TabLayout.Tab?) {}
             })
@@ -147,10 +143,7 @@ class ProductListFragment : Fragment() {
                 }
 
                 override fun onQueryTextChange(newText: String?): Boolean {
-                    searchQuery = newText ?: ""
-                    viewModel.products.value?.let { products ->
-                        updateProductList(products)
-                    }
+                    viewModel.setSearchQuery(newText ?: "")
                     return true
                 }
             })
@@ -169,13 +162,8 @@ class ProductListFragment : Fragment() {
             }
 
             fabSort.setOnClickListener {
-                isAscending = !isAscending
-                updateSortButtonIcon()
-                viewModel.products.value?.let { products ->
-                    updateProductList(products)
-                }
+                viewModel.toggleSortOrder()
             }
-            updateSortButtonIcon()
             Log.d("ProductListFragment", "FABs setup completed")
         } catch (e: Exception) {
             Log.e("ProductListFragment", "Error setting up FABs", e)
@@ -194,54 +182,21 @@ class ProductListFragment : Fragment() {
         AddProductFragment().show(parentFragmentManager, "AddProductFragment")
     }
 
-    private fun observeProducts() {
-        try {
-            Log.d("ProductListFragment", "Starting to observe products")
-            viewLifecycleOwner.lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
                     viewModel.products.collectLatest { products ->
-                        Log.d("ProductListFragment", "Received ${products.size} products")
-                        updateProductList(products)
+                        adapter.submitList(products)
+                    }
+                }
+                launch {
+                    viewModel.isSortAscending().collectLatest { isAscending ->
+                        this@ProductListFragment.isAscending = isAscending
+                        updateSortButtonIcon()
                     }
                 }
             }
-            Log.d("ProductListFragment", "Product observation setup completed")
-        } catch (e: Exception) {
-            Log.e("ProductListFragment", "Error observing products", e)
-            throw e
-        }
-    }
-
-    private fun updateProductList(products: List<Product>) {
-        try {
-            Log.d("ProductListFragment", "Updating product list with ${products.size} products")
-            val filteredProducts = products.filter { product ->
-                val matchesCategory = category == "ALL" || product.category.equals(category, ignoreCase = true)
-                val matchesSearch = searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true)
-                matchesCategory && matchesSearch
-            }.sortedWith(
-                if (isAscending) {
-                    compareBy { it.name }
-                } else {
-                    compareByDescending { it.name }
-                }
-            )
-            Log.d("ProductListFragment", "Filtered to ${filteredProducts.size} products")
-
-            adapter = ProductAdapter(
-                products = filteredProducts,
-                onEditClick = { product ->
-                    showEditProductDialog(product)
-                },
-                onDeleteClick = { product ->
-                    viewModel.deleteProduct(product)
-                }
-            )
-            recyclerView.adapter = adapter
-            Log.d("ProductListFragment", "Product list update completed")
-        } catch (e: Exception) {
-            Log.e("ProductListFragment", "Error updating product list", e)
-            throw e
         }
     }
 

@@ -6,6 +6,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.pos.R
 import com.example.pos.model.Product
@@ -14,12 +16,11 @@ import java.text.NumberFormat
 import java.util.Locale
 
 class ProductAdapter(
-    private var products: List<Product> = emptyList(),
     private val onEditClick: ((Product) -> Unit)? = null,
     private val onDeleteClick: ((Product) -> Unit)? = null,
     private val onQuantityChange: ((Product, Int) -> Unit)? = null,
     private val viewModel: ProductViewModel? = null
-) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
+) : ListAdapter<Product, ProductAdapter.ViewHolder>(ProductDiffCallback()) {
 
     private val numberFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
 
@@ -41,7 +42,7 @@ class ProductAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val product = products[position]
+        val product = getItem(position)
         
         holder.tvName.text = product.name
         holder.tvPrice.text = numberFormat.format(product.price)
@@ -79,11 +80,14 @@ class ProductAdapter(
             onQuantityChange?.invoke(product, quantity)
         }
     }
+}
 
-    override fun getItemCount() = products.size
-
-    fun updateProducts(newProducts: List<Product>) {
-        products = newProducts
-        notifyDataSetChanged()
+class ProductDiffCallback : DiffUtil.ItemCallback<Product>() {
+    override fun areItemsTheSame(oldItem: Product, newItem: Product): Boolean {
+        return oldItem.id == newItem.id
     }
-} 
+
+    override fun areContentsTheSame(oldItem: Product, newItem: Product): Boolean {
+        return oldItem == newItem
+    }
+}

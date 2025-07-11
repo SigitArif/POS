@@ -10,15 +10,38 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ProductViewModel(
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
-    
-    private val _products = MutableStateFlow<List<Product>>(emptyList())
-    val products: StateFlow<List<Product>> = _products.asStateFlow()
+
+    private val _allProducts = MutableStateFlow<List<Product>>(emptyList())
+
+    private val _searchQuery = MutableStateFlow("")
+    private val _selectedCategory = MutableStateFlow("ALL")
+    private val _sortAscending = MutableStateFlow(true)
+
+    val products: StateFlow<List<Product>> = combine(
+        _allProducts,
+        _searchQuery,
+        _selectedCategory,
+        _sortAscending
+    ) { products, query, category, sortAscending ->
+        val filtered = products.filter { product ->
+            val matchesCategory = category == "ALL" || product.category.equals(category, ignoreCase = true)
+            val matchesSearch = query.isEmpty() || product.name.contains(query, ignoreCase = true)
+            matchesCategory && matchesSearch
+        }
+        if (sortAscending) {
+            filtered.sortedBy { it.name }
+        } else {
+            filtered.sortedByDescending { it.name }
+        }
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _categories = MutableStateFlow<List<String>>(emptyList())
     val categories: StateFlow<List<String>> = _categories.asStateFlow()
@@ -35,25 +58,14 @@ class ProductViewModel(
     }
 
     private fun loadProducts() {
-        android.util.Log.d("ProductViewModel", "=== loadProducts() called ===")
-        android.util.Log.d("ProductViewModel", "Stack trace: ${Thread.currentThread().stackTrace.take(10).joinToString("\n")}")
-        
         viewModelScope.launch {
-            try {
-                android.util.Log.d("ProductViewModel", "Starting product collection...")
-                productRepository.getAllProducts()
-                    .catch { e ->
-                        _error.value = "Failed to load products: ${e.message}"
-                        android.util.Log.e("ProductViewModel", "Error loading products", e)
-                    }
-                    .collect { products ->
-                        _products.value = products
-                        android.util.Log.d("ProductViewModel", "Loaded ${products.size} products")
-                    }
-            } catch (e: Exception) {
-                _error.value = "Exception loading products: ${e.message}"
-                android.util.Log.e("ProductViewModel", "Exception in loadProducts", e)
-            }
+            productRepository.getAllProducts()
+                .catch { e ->
+                    _error.value = "Failed to load products: ${e.message}"
+                }
+                .collect { products ->
+                    _allProducts.value = products
+                }
         }
     }
 
@@ -176,10 +188,20 @@ class ProductViewModel(
         _selectedQuantities.value = emptyMap()
     }
     
-    fun refreshProducts() {
-        android.util.Log.d("ProductViewModel", "Manually refreshing products")
-        // Don't call loadProducts() again since it's already running in init
-        // The Flow will automatically update when the database changes
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setCategory(category: String) {
+        _selectedCategory.value = category
+    }
+
+    fun toggleSortOrder() {
+        _sortAscending.value = !_sortAscending.value
+    }
+
+    fun isSortAscending(): StateFlow<Boolean> {
+        return _sortAscending.asStateFlow()
     }
 
     class Factory(

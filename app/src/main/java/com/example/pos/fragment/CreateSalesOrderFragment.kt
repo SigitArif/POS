@@ -32,8 +32,7 @@ class CreateSalesOrderFragment : DialogFragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnCreate: Button
     private lateinit var tvTotal: TextView
-    private var adapter: ProductAdapter? = null
-    private val selectedProducts = mutableMapOf<Product, Int>()
+    private lateinit var adapter: ProductAdapter
 
     private val productViewModel: ProductViewModel by viewModels {
         val database = AppDatabase.getDatabase(requireContext())
@@ -77,15 +76,10 @@ class CreateSalesOrderFragment : DialogFragment() {
 
     private fun setupRecyclerView() {
         adapter = ProductAdapter(
-            products = emptyList(),
             onQuantityChange = { product, quantity ->
-                if (quantity > 0) {
-                    selectedProducts[product] = quantity
-                } else {
-                    selectedProducts.remove(product)
-                }
-                updateTotal()
-            }
+                productViewModel.updateQuantity(product, quantity)
+            },
+            viewModel = productViewModel
         )
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = adapter
@@ -94,21 +88,29 @@ class CreateSalesOrderFragment : DialogFragment() {
     private fun observeProducts() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                productViewModel.products.collectLatest { products ->
-                    adapter?.updateProducts(products)
+                launch {
+                    productViewModel.products.collectLatest { products ->
+                        adapter.submitList(products)
+                    }
+                }
+                launch {
+                    productViewModel.selectedQuantities.collectLatest {
+                        updateTotal()
+                    }
                 }
             }
         }
     }
 
     private fun updateTotal() {
-        val total = selectedProducts.entries.sumOf { (product, quantity) ->
+        val total = productViewModel.selectedQuantities.value.entries.sumOf { (product, quantity) ->
             product.price * quantity
         }
         tvTotal.text = "Total: ${numberFormat.format(total)}"
     }
 
     private fun createSalesOrder() {
+        val selectedProducts = productViewModel.selectedQuantities.value
         if (selectedProducts.isEmpty()) {
             // Show error message
             return
@@ -116,6 +118,7 @@ class CreateSalesOrderFragment : DialogFragment() {
 
         val products = selectedProducts.map { (product, quantity) -> product to quantity }
         salesOrderViewModel.createSalesOrder(products)
+        productViewModel.clearQuantities()
         dismiss()
     }
 } 
