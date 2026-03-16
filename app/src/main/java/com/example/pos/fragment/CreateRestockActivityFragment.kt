@@ -19,10 +19,13 @@ import com.example.pos.data.local.AppDatabase
 import com.example.pos.data.repository.ActivityRepositoryImpl
 import com.example.pos.data.repository.CategoryRepositoryImpl
 import com.example.pos.data.repository.ProductRepositoryImpl
+import com.example.pos.databinding.FragmentCreateRestockActivityBinding
+import com.example.pos.model.Product
 import com.example.pos.viewmodel.ActivityViewModel
 import com.example.pos.viewmodel.ProductViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.appcompat.widget.SearchView
 
 class CreateRestockActivityFragment : Fragment() {
 
@@ -37,6 +40,10 @@ class CreateRestockActivityFragment : Fragment() {
         val categoryRepository = CategoryRepositoryImpl(database.categoryDao())
         ProductViewModel.Factory(productRepository, categoryRepository)
     }
+
+    private var _binding : FragmentCreateRestockActivityBinding? = null
+    private val binding get() = _binding!!
+    private var allProducts : List<Product> = emptyList()
     private lateinit var adapter: ProductSelectionAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyView: TextView
@@ -49,7 +56,30 @@ class CreateRestockActivityFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_create_restock_activity, container, false)
+        _binding = FragmentCreateRestockActivityBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    private fun setupSearch(){
+        // 'binding.searchView' is automatically available because
+        // you have an ID 'searchView' in your XML
+        binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
+            override fun onQueryTextChange(newText : String?) : Boolean {
+                filterList(newText)
+                return true
+            }
+            override fun onQueryTextSubmit(query: String?) : Boolean = false
+        })
+    }
+
+
+    private fun filterList(query: String?){
+        val filtered = if (query.isNullOrBlank()){
+            allProducts
+        }else{
+            allProducts.filter { it.name.contains(query, ignoreCase = true) }
+        }
+        adapter.submitList(filtered)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -59,6 +89,7 @@ class CreateRestockActivityFragment : Fragment() {
         setupRecyclerView()
         setupObservers()
         setupClickListeners()
+        setupSearch()
     }
 
     private fun setupViews(view: View) {
@@ -83,7 +114,9 @@ class CreateRestockActivityFragment : Fragment() {
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             productViewModel.products.collectLatest { products ->
-                adapter.submitList(products)
+                allProducts = products
+                // Apply the search filter immediately to the new data
+                filterList(binding.searchView.query.toString())
                 updateEmptyView(products.isEmpty())
             }
         }
